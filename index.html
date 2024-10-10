@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag & Drop</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+</head>
+<body>
+    <h1>Drag & Drop: Pen, Pencil, and Eraser</h1>
+
+    <!-- Correct and Incorrect counters -->
+    <div class="scoreboard">
+        <p><span id="correct-counter">0</span></p>
+        <p><span id="incorrect-counter">0</span></p>
+    </div>
+
+    <!-- Draggable items spawned in different locations -->
+    <div class="draggable pen" id="pen">
+        <img src="images/pen.png" alt="Pen" class="draggable-image">
+    </div>
+    <div class="draggable pencil" id="pencil">
+        <img src="images/pencil.png" alt="Pencil" class="draggable-image">
+    </div>
+    <div class="draggable eraser" id="eraser">
+        <img src="images/eraser.png" alt="Eraser" class="draggable-image">
+    </div>
+
+    <!-- Single Drop Box -->
+    <div class="container">
+        <div id="dropzone" class="interact dropzone">Drop Box</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+
+<!-- Part 1: File Dropzone
+    <div id="file-dropzone" class="dropzone">Drop files here</div>
+    <p>Selected files:</p>
+    <ul id="output"></ul> -->
+
+<!-- Part 2: Simple drag and drop elements with images
+    <div class="container">
+        <div draggable="true" class="dropzone box pen" data-item="Pen">
+            <img src="images/pen.png" alt="Pen" class="draggable-image">
+        </div>
+        <div draggable="true" class="dropzone box pencil" data-item="Pencil">
+            <img src="images/pencil.png" alt="Pencil" class="draggable-image">
+        </div>
+        <div draggable="true" class="dropzone box eraser" data-item="Eraser">
+            <img src="images/eraser.png" alt="Eraser" class="draggable-image">
+        </div>
+    </div> -->
