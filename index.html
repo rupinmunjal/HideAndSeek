@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drag & Drop Game</title>
     <link rel="stylesheet" href="styles/styles.css">
-    <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
 </head>
 
 <body>
@@ -14,10 +13,8 @@
 
     <button id="reset-button">Reset Game</button>
 
-
     <div class="scoreboard">
-        <p>Correct: <span id="correct-counter">0</span></p>
-        <p>Incorrect: <span id="incorrect-counter">0</span></p>
+        <p>Lives: <span id="lives-counter">3</span></p>
     </div>
 
     <div id="draggable-container" class="container">
@@ -27,8 +24,10 @@
     <div class="container">
         <div id="dropzone" class="dropzone">Drop Box</div>
     </div>
-    
 
+    <div id="message" class="message"></div> <!-- Message for feedback -->
+
+    <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
     <script src="script.js"></script>
 </body>
 

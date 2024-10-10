@@ -117,3 +117,10 @@ h1 {
 #reset-button:hover {
     background-color: #0056b3; /* Darker shade on hover */
 }
+
+.message {
+    text-align: center;
+    font-size: 18px;
+    margin-top: 20px;
+    color: #ff6b6b; /* Red color for messages */
+}

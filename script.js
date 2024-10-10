@@ -1,11 +1,10 @@
 let currentOrderIndex = 0;
-let correctCounter = 0;
-let incorrectCounter = 0;
 let correctOrder = [];
+let lives = 3; // Initialize lives counter
 
 // Fetch items from JSON file and set up the game
 async function fetchItems() {
-    const response = await fetch('assets/json/items.json'); // Corrected path
+    const response = await fetch('assets/json/items.json');
     const items = await response.json();
     correctOrder = items.map(item => item.id); // Extract IDs for correct order
     shuffleArray(correctOrder); // Shuffle the order
@@ -44,17 +43,16 @@ function shuffleArray(array) {
 
 // Update the title and game heading with the current order
 function updateGameTitle() {
-    const orderText = correctOrder.join(", ");
-    const capitalizedOrderText = orderText.charAt(0).toUpperCase() + orderText.slice(1);
-    document.title = `Order: ${capitalizedOrderText}`;
-    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${capitalizedOrderText}`;
+    const capitalizeFirstLetter = (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    
+    const orderText = correctOrder.map(capitalizeFirstLetter).join(", ");
+    document.title = `Order: ${orderText}`;
+    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${orderText}`;
 }
 
-
-// Update the counters on the screen
-function updateCounters() {
-    document.getElementById("correct-counter").textContent = correctCounter;
-    document.getElementById("incorrect-counter").textContent = incorrectCounter;
+// Update the lives counter on the screen
+function updateLives() {
+    document.getElementById("lives-counter").textContent = lives; // Update lives display
 }
 
 // Randomize the spawn location of draggable items
@@ -68,7 +66,6 @@ function randomizeSpawnLocation() {
     document.querySelectorAll('.draggable').forEach((item) => {
         let randomTop, randomLeft;
 
-        // Ensure that items do not spawn over the drop box or outside the screen
         do {
             randomTop = Math.floor(Math.random() * (spawnAreaHeight - item.offsetHeight));
             randomLeft = Math.floor(Math.random() * (spawnAreaWidth - item.offsetWidth));
@@ -77,7 +74,6 @@ function randomizeSpawnLocation() {
             randomLeft < dropZoneRect.right && randomLeft + item.offsetWidth > dropZoneRect.left
         );
 
-        // Apply random spawn position
         item.style.position = 'absolute'; // Ensure items are absolutely positioned
         item.style.top = randomTop + 'px';
         item.style.left = randomLeft + 'px';
@@ -108,8 +104,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         listeners: { move: dragMoveListener }
     });
 
-    // Update counters initially
-    updateCounters();
+    // Update lives initially
+    updateLives();
 });
 
 // Move dragged elements
@@ -137,43 +133,87 @@ function onDragLeave(event) {
 function onDrop(event) {
     let draggableElement = event.relatedTarget;
     let itemId = draggableElement.getAttribute('id');
-    
+
+    // Get the dropzone's position
+    const dropzoneRect = document.getElementById('dropzone').getBoundingClientRect();
+
     if (itemId === correctOrder[currentOrderIndex]) {
-        correctCounter++;
         currentOrderIndex++;
-
-        if (currentOrderIndex === correctOrder.length) {
-            setTimeout(resetItems, 1000); // Reset after completing all items correctly
-        }
+        draggableElement.style.visibility = 'hidden'; // Hide the correct item
     } else {
-        incorrectCounter++;
-        event.target.classList.add('wrong-drop');
-        setTimeout(() => {
-            event.target.classList.remove('wrong-drop');
-        }, 500);
-    }
+        lives--; // Deduct a life on incorrect drop
+        showMessage(`Incorrect! You have ${lives} lives left.`); // Show incorrect message
+        
+        // Push the item away from the dropzone
+        pushAway(draggableElement, dropzoneRect);
 
-    draggableElement.style.visibility = 'hidden';
+        // Check if lives are 0
+        if (lives <= 0) {
+            alert("Game Over! No lives left. Restarting the game.");
+            resetItems();
+            return;
+        }
+    }
 
     const allHidden = [...document.querySelectorAll('.draggable')].every(item => item.style.visibility === 'hidden');
     if (allHidden) {
         setTimeout(resetItems, 1000); // Reset after all items are hidden
     }
 
-    updateCounters();
+    updateLives();
 }
-// Add this code at the end of your JavaScript
+
+// Function to push the item away from the drop zone
+function pushAway(draggableElement, dropzoneRect) {
+    const itemRect = draggableElement.getBoundingClientRect();
+
+    // Calculate the center position of the dropzone
+    const dropzoneCenterX = dropzoneRect.left + dropzoneRect.width / 2;
+    const dropzoneCenterY = dropzoneRect.top + dropzoneRect.height / 2;
+
+    // Calculate the center position of the draggable item
+    const itemCenterX = itemRect.left + itemRect.width / 2;
+    const itemCenterY = itemRect.top + itemRect.height / 2;
+
+    // Calculate the direction from the dropzone center to the item center
+    const deltaX = itemCenterX - dropzoneCenterX;
+    const deltaY = itemCenterY - dropzoneCenterY;
+
+    // Normalize the direction vector
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const normX = deltaX / distance;
+    const normY = deltaY / distance;
+
+    // Push the item away by a specific distance (e.g., 100 pixels)
+    const pushDistance = 100;
+    const newLeft = itemRect.left + (normX * pushDistance);
+    const newTop = itemRect.top + (normY * pushDistance);
+
+    // Apply the new position to the draggable item
+    draggableElement.style.position = 'absolute'; // Make sure it's positioned absolutely
+    draggableElement.style.left = newLeft + 'px';
+    draggableElement.style.top = newTop + 'px';
+}
+
+
+// Function to show messages to the user
+function showMessage(message) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = message;
+    setTimeout(() => {
+        messageDiv.textContent = ''; // Clear message after 2 seconds
+    }, 2000);
+}
 
 // Add event listener to reset button
 document.getElementById('reset-button').addEventListener('click', resetItems);
 
-// Reset function (already defined) will be used here
+// Reset function
 function resetItems() {
     currentOrderIndex = 0;
-
-    // Shuffle order again
-    shuffleArray(correctOrder);
-    updateGameTitle();
+    lives = 3; // Reset lives
+    shuffleArray(correctOrder); // Shuffle order again
+    updateGameTitle(); // Update the game title
 
     // Reset visibility and randomize positions of items
     document.querySelectorAll('.draggable').forEach(item => {
@@ -184,10 +224,8 @@ function resetItems() {
     });
 
     randomizeSpawnLocation();
-    document.getElementById("dropzone").classList.remove('drop-target', 'wrong-drop');
+    document.getElementById("dropzone").classList.remove('drop-target');
 
-    // Reset counters
-    correctCounter = 0;
-    incorrectCounter = 0;
-    updateCounters();
+    // Reset lives counter
+    updateLives();
 }
