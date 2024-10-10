@@ -1,29 +1,42 @@
-// Initialize important variables
-let currentOrderIndex = 0; // Tracks the current order for the correct items
-let correctCounter = 0;    // Tracks the number of correct drops
-let incorrectCounter = 0;  // Tracks the number of incorrect drops
-const correctOrder = ["pen", "pencil", "eraser"]; // The correct order for dragging items
+let currentOrderIndex = 0;
+let correctCounter = 0;
+let incorrectCounter = 0;
+let correctOrder = ["pen", "pencil", "eraser"];
 
-// Function to update the correct and incorrect counters on the screen
+// Fisher-Yates shuffle to randomize order
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Update the title and game heading with the current order
+function updateGameTitle() {
+    const orderText = correctOrder.join(", ");
+    document.title = `Order: ${orderText}`;
+    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${orderText}`;
+}
+
+// Update the counters on the screen
 function updateCounters() {
     document.getElementById("correct-counter").textContent = `Correct: ${correctCounter}`;
     document.getElementById("incorrect-counter").textContent = `Incorrect: ${incorrectCounter}`;
 }
 
-// Function to randomize the spawn location of draggable items, ensuring they don't overlap the drop zone
+// Randomize the spawn location of draggable items
 function randomizeSpawnLocation() {
     const spawnAreaWidth = window.innerWidth;
     const spawnAreaHeight = window.innerHeight;
     const dropZone = document.getElementById('dropzone');
 
-    // Get dimensions of the drop zone to prevent item spawn overlap
+    // Get drop zone dimensions to avoid spawning over it
     const dropZoneRect = dropZone.getBoundingClientRect();
 
-    // Iterate over each draggable item and assign random positions
     document.querySelectorAll('.draggable').forEach((item) => {
         let randomTop, randomLeft;
 
-        // Keep generating random positions until they don't overlap with the drop zone
+        // Ensure that items do not spawn over the drop box or outside the screen
         do {
             randomTop = Math.floor(Math.random() * (spawnAreaHeight - item.offsetHeight));
             randomLeft = Math.floor(Math.random() * (spawnAreaWidth - item.offsetWidth));
@@ -32,127 +45,127 @@ function randomizeSpawnLocation() {
             randomLeft < dropZoneRect.right && randomLeft + item.offsetWidth > dropZoneRect.left
         );
 
-        // Apply the randomized positions to the draggable items
+        // Apply random spawn position
         item.style.top = randomTop + 'px';
         item.style.left = randomLeft + 'px';
     });
 }
 
-// Function to handle the movement of draggable elements
-function dragMoveListener(event) {
-    let target = event.target; // The item being dragged
-    let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx; // Calculate the new x position
-    let y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy; // Calculate the new y position
+// Drag and drop logic
+document.addEventListener("DOMContentLoaded", () => {
+    // Shuffle the order randomly when the page loads
+    shuffleArray(correctOrder);
+    updateGameTitle();
 
-    // Update the item's transform property to move it to the new position
+    interact("#dropzone").dropzone({
+        accept: ".draggable",
+        overlap: 0.75,
+        ondragenter: onDragEnter,
+        ondragleave: onDragLeave,
+        ondrop: onDrop
+    });
+
+    interact(".draggable").draggable({
+        inertia: true,
+        autoScroll: true,
+        modifiers: [
+            interact.modifiers.restrictRect({
+                restriction: "parent",
+                endOnly: true
+            })
+        ],
+        listeners: { move: dragMoveListener }
+    });
+
+    // Randomize spawn location when the page loads
+    randomizeSpawnLocation();
+
+    // Update counters initially
+    updateCounters();
+});
+
+// Move dragged elements
+function dragMoveListener(event) {
+    let target = event.target;
+    let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+    let y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+
     target.style.transform = `translate(${x}px, ${y}px)`;
 
-    // Store the new x and y coordinates for the next drag movement
     target.setAttribute("data-x", x);
     target.setAttribute("data-y", y);
 }
 
-// Function to add visual feedback when a draggable item enters the drop zone
 function onDragEnter(event) {
     let dropzoneElement = event.target;
-    dropzoneElement.classList.add('drop-target'); // Add a class to visually indicate the target zone
+    dropzoneElement.classList.add('drop-target');
 }
 
-// Function to remove the visual feedback when the item leaves the drop zone
 function onDragLeave(event) {
     let dropzoneElement = event.target;
-    dropzoneElement.classList.remove('drop-target'); // Remove the visual feedback class
+    dropzoneElement.classList.remove('drop-target');
 }
 
-// Function to handle the logic when an item is dropped into the drop zone
+// Handle the drop logic
 function onDrop(event) {
-    let draggableElement = event.relatedTarget;  // The dragged item that was dropped
-    let itemId = draggableElement.getAttribute('id'); // Get the ID of the dropped item
+    let draggableElement = event.relatedTarget;
+    let itemId = draggableElement.getAttribute('id');
     
-    // Check if the item was dropped in the correct order
+    // Check if the dropped element matches the required order
     if (itemId === correctOrder[currentOrderIndex]) {
-        correctCounter++;     // Increment the correct counter
-        currentOrderIndex++;  // Move to the next expected item in the correctOrder array
+        correctCounter++;
+        currentOrderIndex++;
 
-        // If all items are dropped in the correct order, reset the game
         if (currentOrderIndex === correctOrder.length) {
-            setTimeout(resetItems, 1000); // Add a short delay before resetting
+            // Reset the game after completing all items correctly
+            setTimeout(resetItems, 1000); // Add a short delay before respawning
         }
     } else {
-        incorrectCounter++;  // Increment the incorrect counter for a wrong drop
-
-        // Briefly turn the drop zone red to indicate an incorrect drop
+        incorrectCounter++;
+        // Turn the drop box red on incorrect drop
         event.target.classList.add('wrong-drop');
         setTimeout(() => {
             event.target.classList.remove('wrong-drop');
         }, 500);
     }
 
-    // Hide the draggable item once it is dropped
+    // Hide the dropped item
     draggableElement.style.visibility = 'hidden';
 
-    // Check if all draggable items are hidden, indicating the end of the game
+    // Check if there are no more visible draggable items
     const allHidden = [...document.querySelectorAll('.draggable')].every(item => item.style.visibility === 'hidden');
     if (allHidden) {
-        setTimeout(resetItems, 1000); // Reset the game if all items are hidden
+        setTimeout(resetItems, 1000); // Add a short delay before respawning
     }
 
-    // Update the counters on the screen after a drop
+    // Update counters
     updateCounters();
 }
 
-// Function to reset the game and randomize the draggable item positions
+// Respawn items and randomize locations
 function resetItems() {
-    currentOrderIndex = 0; // Reset the index for correct item order
+    currentOrderIndex = 0;
 
-    // Reset each draggable item's visibility and position
+    // Shuffle order again
+    shuffleArray(correctOrder);
+    updateGameTitle();
+
+    // Reset visibility and randomize positions of items
     document.querySelectorAll('.draggable').forEach(item => {
-        item.style.visibility = 'visible';       // Make the item visible again
-        item.setAttribute("data-x", 0);          // Reset the x-coordinate to 0
-        item.setAttribute("data-y", 0);          // Reset the y-coordinate to 0
-        item.style.transform = 'translate(0px, 0px)'; // Reset the item's position
+        item.style.visibility = 'visible';
+        item.setAttribute("data-x", 0);
+        item.setAttribute("data-y", 0);
+        item.style.transform = 'translate(0px, 0px)';
     });
 
-    // Call the function to randomize new spawn positions for the items
+    // Randomize new spawn positions
     randomizeSpawnLocation();
 
-    // Remove any visual feedback classes from the drop zone
+    // Reset dropzone color
     document.getElementById("dropzone").classList.remove('drop-target', 'wrong-drop');
 
-    // Reset counters to start the game fresh
+    // Reset counters (if needed, for a new game)
     correctCounter = 0;
     incorrectCounter = 0;
-    updateCounters(); // Update the counters on the screen
-}
-
-// Event listener for when the page has fully loaded
-document.addEventListener("DOMContentLoaded", () => {
-
-    // Initialize the drop zone, where items can be dropped, using Interact.js
-    interact("#dropzone").dropzone({
-        accept: ".draggable",     // Accept only elements with the class '.draggable'
-        overlap: 0.75,            // Require 75% overlap for the drop to register
-        ondragenter: onDragEnter, // Function for when an item enters the drop zone
-        ondragleave: onDragLeave, // Function for when an item leaves the drop zone
-        ondrop: onDrop            // Function for handling when an item is dropped
-    });
-
-    // Initialize draggable elements using Interact.js
-    interact(".draggable").draggable({
-        inertia: true,    // Makes dragging more fluid by adding inertia to movement
-        autoScroll: true, // Automatically scroll the page if the item is dragged near the edge
-        modifiers: [
-            interact.modifiers.restrictRect({
-                restriction: "parent", // Restrict the draggable items within the parent container
-                endOnly: true           // Allow dragging only within the boundaries
-            })
-        ],
-        listeners: { move: dragMoveListener } // Handle the movement of dragged items
-    });
-
-    // Call the randomizeSpawnLocation function to set the initial positions of draggable items
-    randomizeSpawnLocation();
-
-    // Call the updateCounters function to set the initial counter values
     updateCounters();
-});
+}

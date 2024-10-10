@@ -1,23 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <!-- Meta tags for character set and responsiveness -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag & Drop</title>
+    
+    <!-- Page title: dynamically set via JavaScript -->
+    <title>Drag & Drop Game</title>
+    
+    <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="styles/styles.css">
+    
+    <!-- Interact.js library for drag and drop functionality -->
     <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
 </head>
-<body>
-    <h1>Drag & Drop: Pen, Pencil, and Eraser</h1>
 
-    <!-- Correct and Incorrect counters -->
+<body>
+    <!-- Main heading of the game -->
+    <h1 id="game-title">Drag & Drop Game</h1>
+
+    <!-- Scoreboard to track correct and incorrect drops -->
     <div class="scoreboard">
         <p>Correct: <span id="correct-counter">0</span></p>
         <p>Incorrect: <span id="incorrect-counter">0</span></p>
     </div>
-    
 
-    <!-- Draggable items spawned in different locations -->
+    <!-- Draggable items with unique IDs for each item -->
     <div class="draggable pen" id="pen">
         <img src="assets/images/pen.png" alt="Pen" class="draggable-image">
     </div>
@@ -28,31 +37,13 @@
         <img src="assets/images/eraser.png" alt="Eraser" class="draggable-image">
     </div>
 
-    <!-- Single Drop Box -->
+    <!-- Drop zone for dragging items into -->
     <div class="container">
         <div id="dropzone" class="interact dropzone">Drop Box</div>
     </div>
 
+    <!-- Link to the external JavaScript file -->
     <script src="script.js"></script>
 </body>
+
 </html>
-
-
-
-<!-- Part 1: File Dropzone
-    <div id="file-dropzone" class="dropzone">Drop files here</div>
-    <p>Selected files:</p>
-    <ul id="output"></ul> -->
-
-<!-- Part 2: Simple drag and drop elements with images
-    <div class="container">
-        <div draggable="true" class="dropzone box pen" data-item="Pen">
-            <img src="images/pen.png" alt="Pen" class="draggable-image">
-        </div>
-        <div draggable="true" class="dropzone box pencil" data-item="Pencil">
-            <img src="images/pencil.png" alt="Pencil" class="draggable-image">
-        </div>
-        <div draggable="true" class="dropzone box eraser" data-item="Eraser">
-            <img src="images/eraser.png" alt="Eraser" class="draggable-image">
-        </div>
-    </div> -->
