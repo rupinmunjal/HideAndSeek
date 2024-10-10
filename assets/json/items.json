@@ -1,0 +1,27 @@
+[
+    {
+        "id": "pen",
+        "name": "Pen",
+        "image": "assets/images/pen.png"
+    },
+    {
+        "id": "pencil",
+        "name": "Pencil",
+        "image": "assets/images/pencil.png"
+    },
+    {
+        "id": "eraser",
+        "name": "Eraser",
+        "image": "assets/images/eraser.png"
+    },
+    {
+        "id": "marker",
+        "name": "Marker",
+        "image": "assets/images/marker.png"
+    },
+    {
+        "id": "higlighter",
+        "name": "Higlighter",
+        "image": "assets/images/highlighter.png"
+    }
+]

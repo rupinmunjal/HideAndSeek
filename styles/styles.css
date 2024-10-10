@@ -69,8 +69,8 @@ h1 {
 
 /* Single Drop Zone */
 .dropzone {
-    width: 400px;
-    height: 400px;
+    width: 300px;
+    height: 300px;
     border: 2px solid #1576C1;
     background-color: #e0f7fa;
     border-radius: 10px;

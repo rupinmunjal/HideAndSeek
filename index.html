@@ -2,47 +2,30 @@
 <html lang="en">
 
 <head>
-    <!-- Meta tags for character set and responsiveness -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Page title: dynamically set via JavaScript -->
     <title>Drag & Drop Game</title>
-    
-    <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="styles/styles.css">
-    
-    <!-- Interact.js library for drag and drop functionality -->
     <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
 </head>
 
 <body>
-    <!-- Main heading of the game -->
     <h1 id="game-title">Drag & Drop Game</h1>
 
-    <!-- Scoreboard to track correct and incorrect drops -->
     <div class="scoreboard">
         <p>Correct: <span id="correct-counter">0</span></p>
         <p>Incorrect: <span id="incorrect-counter">0</span></p>
     </div>
 
-    <!-- Draggable items with unique IDs for each item -->
-    <div class="draggable pen" id="pen">
-        <img src="assets/images/pen.png" alt="Pen" class="draggable-image">
-    </div>
-    <div class="draggable pencil" id="pencil">
-        <img src="assets/images/pencil.png" alt="Pencil" class="draggable-image">
-    </div>
-    <div class="draggable eraser" id="eraser">
-        <img src="assets/images/eraser.png" alt="Eraser" class="draggable-image">
+    <div id="draggable-container" class="container">
+        <!-- Draggable items will be generated here -->
     </div>
 
-    <!-- Drop zone for dragging items into -->
     <div class="container">
-        <div id="dropzone" class="interact dropzone">Drop Box</div>
+        <div id="dropzone" class="dropzone">Drop Box</div>
     </div>
+    
 
-    <!-- Link to the external JavaScript file -->
     <script src="script.js"></script>
 </body>
 
