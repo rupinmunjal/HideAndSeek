@@ -61,6 +61,12 @@ h1 {
     max-height: 100%;
 }
 
+.draggable:hover {
+    background-color: #f0e68c; /* A light yellow to indicate it's draggable */
+    cursor: move;
+}
+
+
 /* Single Drop Zone */
 .dropzone {
     width: 400px;
