@@ -1,15 +1,19 @@
 let currentOrderIndex = 0;
 let correctOrder = [];
 let lives = 3; // Initialize lives counter
+let level = 1; // Initialize level
+const minItems = 3; // Minimum number of items per level
+let maxItems = 0; // Maximum number of items in the JSON file
 
 // Fetch items from JSON file and set up the game
 async function fetchItems() {
     const response = await fetch('assets/json/items.json');
     const items = await response.json();
+    maxItems = items.length; // Get the total number of items available
     correctOrder = items.map(item => item.id); // Extract IDs for correct order
     shuffleArray(correctOrder); // Shuffle the order
     renderDraggableItems(items); // Render draggable items
-    updateGameTitle(); // Update title with the current order
+    updateGameTitle(items); // Update title with the current order
     randomizeSpawnLocation(); // Randomize spawn locations
 }
 
@@ -18,7 +22,10 @@ function renderDraggableItems(items) {
     const container = document.getElementById('draggable-container');
     container.innerHTML = ''; // Clear the container
 
-    items.forEach(item => {
+    const numItemsToRender = Math.min(minItems + level - 1, maxItems); // Determine number of items to render
+    const itemsToRender = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id)); // Get the items for the current level based on correct order
+
+    itemsToRender.forEach(item => {
         const draggableDiv = document.createElement('div');
         draggableDiv.classList.add('draggable');
         draggableDiv.id = item.id;
@@ -41,18 +48,24 @@ function shuffleArray(array) {
     }
 }
 
-// Update the title and game heading with the current order
-function updateGameTitle() {
+// Update the title and game heading with the current order and level
+function updateGameTitle(items) {
     const capitalizeFirstLetter = (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    
-    const orderText = correctOrder.map(capitalizeFirstLetter).join(", ");
+
+    const numItemsToRender = Math.min(minItems + level - 1, maxItems); // Calculate the number of items for the current level
+    const orderText = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id).name).map(capitalizeFirstLetter).join(", ");
     document.title = `Order: ${orderText}`;
-    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${orderText}`;
+    document.getElementById("game-title").textContent = `Level ${level} - Drag & Drop in Order: ${orderText} (${numItemsToRender} items)`;
 }
 
 // Update the lives counter on the screen
 function updateLives() {
     document.getElementById("lives-counter").textContent = lives; // Update lives display
+}
+
+// Update the level counter on the screen
+function updateLevel() {
+    document.getElementById("level-counter").textContent = level; // Update level display
 }
 
 // Randomize the spawn location of draggable items
@@ -104,8 +117,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         listeners: { move: dragMoveListener }
     });
 
-    // Update lives initially
+    // Update lives and level initially
     updateLives();
+    updateLevel();
 });
 
 // Move dragged elements
@@ -140,6 +154,13 @@ function onDrop(event) {
     if (itemId === correctOrder[currentOrderIndex]) {
         currentOrderIndex++;
         draggableElement.style.visibility = 'hidden'; // Hide the correct item
+
+        // Check if the current level is complete
+        if (currentOrderIndex >= Math.min(minItems + level - 1, maxItems)) {
+            level++; // Go to the next level
+            currentOrderIndex = 0; // Reset order index for the new level
+            resetItems(); // Reset items for the next level
+        }
     } else {
         lives--; // Deduct a life on incorrect drop
         showMessage(`Incorrect! You have ${lives} lives left.`); // Show incorrect message
@@ -153,11 +174,6 @@ function onDrop(event) {
             resetItems();
             return;
         }
-    }
-
-    const allHidden = [...document.querySelectorAll('.draggable')].every(item => item.style.visibility === 'hidden');
-    if (allHidden) {
-        setTimeout(resetItems, 1000); // Reset after all items are hidden
     }
 
     updateLives();
@@ -189,43 +205,26 @@ function pushAway(draggableElement, dropzoneRect) {
     const newLeft = itemRect.left + (normX * pushDistance);
     const newTop = itemRect.top + (normY * pushDistance);
 
-    // Apply the new position to the draggable item
-    draggableElement.style.position = 'absolute'; // Make sure it's positioned absolutely
-    draggableElement.style.left = newLeft + 'px';
-    draggableElement.style.top = newTop + 'px';
+    // Move the draggable item to the new position
+    draggableElement.style.transform = `translate(${newLeft}px, ${newTop}px)`;
+    draggableElement.setAttribute("data-x", newLeft);
+    draggableElement.setAttribute("data-y", newTop);
 }
 
-
-// Function to show messages to the user
-function showMessage(message) {
+// Show feedback message
+function showMessage(msg) {
     const messageDiv = document.getElementById('message');
-    messageDiv.textContent = message;
+    messageDiv.textContent = msg;
     setTimeout(() => {
-        messageDiv.textContent = ''; // Clear message after 2 seconds
+        messageDiv.textContent = ''; // Clear the message after a delay
     }, 2000);
 }
 
-// Add event listener to reset button
-document.getElementById('reset-button').addEventListener('click', resetItems);
-
-// Reset function
+// Reset items and game state
 function resetItems() {
-    currentOrderIndex = 0;
     lives = 3; // Reset lives
-    shuffleArray(correctOrder); // Shuffle order again
-    updateGameTitle(); // Update the game title
-
-    // Reset visibility and randomize positions of items
-    document.querySelectorAll('.draggable').forEach(item => {
-        item.style.visibility = 'visible';
-        item.setAttribute("data-x", 0);
-        item.setAttribute("data-y", 0);
-        item.style.transform = 'translate(0px, 0px)';
-    });
-
-    randomizeSpawnLocation();
-    document.getElementById("dropzone").classList.remove('drop-target');
-
-    // Reset lives counter
-    updateLives();
+    currentOrderIndex = 0; // Reset order index
+    fetchItems(); // Fetch items again for new game
+    updateLives(); // Update lives display
+    updateLevel(); // Update level display
 }
