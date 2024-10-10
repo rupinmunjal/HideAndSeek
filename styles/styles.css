@@ -99,3 +99,21 @@ h1 {
 .wrong-drop {
     background-color: #ff6b6b;
 }
+
+/* Reset Button Styles */
+#reset-button {
+    display: block; /* Center the button */
+    margin: 20px auto; /* Center the button */
+    padding: 10px 20px; /* Padding for the button */
+    font-size: 18px; /* Font size for button text */
+    background-color: #007bff; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove border */
+    border-radius: 5px; /* Rounded corners for the button */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+#reset-button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}

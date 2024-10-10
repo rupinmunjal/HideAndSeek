@@ -45,9 +45,11 @@ function shuffleArray(array) {
 // Update the title and game heading with the current order
 function updateGameTitle() {
     const orderText = correctOrder.join(", ");
-    document.title = `Order: ${orderText}`;
-    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${orderText}`;
+    const capitalizedOrderText = orderText.charAt(0).toUpperCase() + orderText.slice(1);
+    document.title = `Order: ${capitalizedOrderText}`;
+    document.getElementById("game-title").textContent = `Drag & Drop in Order: ${capitalizedOrderText}`;
 }
+
 
 // Update the counters on the screen
 function updateCounters() {
@@ -160,8 +162,12 @@ function onDrop(event) {
 
     updateCounters();
 }
+// Add this code at the end of your JavaScript
 
-// Respawn items and randomize locations
+// Add event listener to reset button
+document.getElementById('reset-button').addEventListener('click', resetItems);
+
+// Reset function (already defined) will be used here
 function resetItems() {
     currentOrderIndex = 0;
 
