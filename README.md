@@ -31,13 +31,13 @@
 <br />
 <div align="center">
   <a href="https://github.com/rupinmunjal/MantraMatch">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="/assets/images/logo.jpeg" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">project_title</h3>
+<h3 align="center">Mantra Match</h3>
 
   <p align="center">
-    project_description
+    Mantra Match is an interactive drag-and-drop game designed to make learning fun and engaging! The goal of the game is for users to drag different images into the correct drop box based on the text provided. It is a simple yet effective way to reinforce knowledge through visual association.
     <br />
     <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
     <br />
