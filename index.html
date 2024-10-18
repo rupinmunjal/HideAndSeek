@@ -12,6 +12,8 @@
 
 <body>
     <div class="container">
+        <audio id="item-audio" preload="auto"></audio>
+
         <div class="scoreboard">
             <p>Lives: <span id="lives-counter">3</span></p>
             <p>Level: <span id="level-counter">1</span></p>
@@ -19,26 +21,22 @@
 
         <div>
             <h1 class="text-primary fw-semibold text-center m-2">Drag & Drop Game</h1>
-            <h2 id="game-level" class="text-info-emphasis fw-semibold text-center m-2">Drag & Drop Game</h2>
-            <h3 id="game-title" class="text-warning fw-semibold text-center m-2">Drag & Drop Game</h3>
+            <h2 id="game-level" class="text-info-emphasis fw-semibold text-center m-2">Level 1</h2>
+            <h3 id="game-title" class="text-warning fw-semibold text-center m-2">Arrange Items in Order</h3>
         </div>
-        <div class="text-center m-3">
-            <button id="start-button" type="button" class="btn btn-primary">Start Game</button>
-        </div>
+
         <div class="text-center m-3">
             <button id="reset-button" type="button" class="btn btn-primary">Reset Game</button>
         </div>
 
         <div id="draggable-container" class="draggable-container mt-4 mb-0">
-            <!-- Draggable items will be generated here -->
         </div>
 
         <div id="dropzone" class="dropzone mt-0">
             Drop Box
         </div>
 
-        <div id="message" class="message">
-        </div>
+        <div id="message" class="message"></div>
     </div>
 
     <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
