@@ -6,7 +6,8 @@ const gameState = {
     level: 1,
     minItems: 3,
     maxItems: 0,
-    items: []
+    items: [],
+    gameStarted: false
 };
 
 // Game configuration and utilities
@@ -47,32 +48,29 @@ const uiManager = {
 
 // Item rendering and positioning
 const itemRenderer = {
-    // In itemRenderer
-renderDraggableItems(items) {
-    const boxContainer = document.getElementById('draggable-container');
-    boxContainer.innerHTML = '';
+    renderDraggableItems(items) {
+        const boxContainer = document.getElementById('draggable-container');
+        boxContainer.innerHTML = '';
 
-    const itemCount = gameConfig.getItemCountForLevel();
-    const itemsToRender = gameState.correctOrder
-        .slice(0, itemCount)  // Get the correct order based on the current level
-        .map(id => items.find(item => item.id === id));
+        const itemCount = gameConfig.getItemCountForLevel();
+        const itemsToRender = gameState.correctOrder
+            .slice(0, itemCount)
+            .map(id => items.find(item => item.id === id));
 
-    // Ensure items are shuffled for rendering
-    gameConfig.shuffleArray(itemsToRender);
+        gameConfig.shuffleArray(itemsToRender);
 
-    const totalWidth = (itemCount * gameConfig.itemDimensions.width) +
-        ((itemCount - 1) * gameConfig.itemSpacing);
+        const totalWidth = (itemCount * gameConfig.itemDimensions.width) +
+            ((itemCount - 1) * gameConfig.itemSpacing);
 
-    boxContainer.style.width = `${totalWidth}px`;
-    boxContainer.style.margin = '0 auto';
+        boxContainer.style.width = `${totalWidth}px`;
+        boxContainer.style.margin = '0 auto';
 
-    itemsToRender.forEach((item, index) => {
-        const position = this.calculateItemPosition(index);
-        const draggableDiv = this.createDraggableItem(item, position);
-        boxContainer.appendChild(draggableDiv);
-    });
-},
-
+        itemsToRender.forEach((item, index) => {
+            const position = this.calculateItemPosition(index);
+            const draggableDiv = this.createDraggableItem(item, position);
+            boxContainer.appendChild(draggableDiv);
+        });
+    },
 
     calculateItemPosition(index) {
         const { width } = gameConfig.itemDimensions;
@@ -88,6 +86,12 @@ renderDraggableItems(items) {
         img.src = item.image;
         img.alt = item.name;
         img.classList.add('draggable-image');
+
+        // Add error handling for image loading
+        img.onerror = function() {
+            console.error(`Failed to load image: ${item.image}`);
+            this.src = 'path/to/placeholder-image.png'; // Replace with an actual placeholder image path
+        };
 
         draggableDiv.appendChild(img);
         draggableDiv.style.position = 'absolute';
@@ -132,10 +136,9 @@ const dragDropHandler = {
             gameState.currentOrderIndex = 0;
             gameManager.resetLevel();
         } else {
-            gameManager.playNextAudio();  // Play next audio
+            gameManager.playNextAudio();
         }
     },
-    
 
     handleIncorrectDrop(element) {
         gameState.lives--;
@@ -162,21 +165,42 @@ const gameManager = {
         await this.fetchItems();
         this.setupInteractions();
         this.setupResetButton();
+        this.setupStartButton();
         uiManager.updateLives();
         uiManager.updateLevel();
     },
 
     async fetchItems() {
-        const response = await fetch('assets/json/items.json');
-        const items = await response.json();
-        gameState.items = items; // Store the items in gameState
-        gameState.maxItems = items.length;
-        gameState.correctOrder = items.map(item => item.id);
-        gameConfig.shuffleArray(gameState.correctOrder);
-        itemRenderer.renderDraggableItems(items);
-        this.playNextAudio();  // Start playing first audio
+        try {
+            const response = await fetch('assets/json/items.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const items = await response.json();
+            gameState.items = items;
+            gameState.maxItems = items.length;
+            gameState.correctOrder = items.map(item => item.id);
+            gameConfig.shuffleArray(gameState.correctOrder);
+        } catch (error) {
+            console.error("Failed to fetch items:", error);
+            uiManager.showMessage("Failed to load game items. Please try again.");
+        }
     },
-    
+
+    setupStartButton() {
+        const startButton = document.getElementById('startButton');
+        startButton.addEventListener('click', () => this.startGame());
+    },
+
+    startGame() {
+        if (!gameState.gameStarted) {
+            gameState.gameStarted = true;
+            itemRenderer.renderDraggableItems(gameState.items);
+            this.playNextAudio();
+            document.getElementById('startButton').style.display = 'none';
+            uiManager.showMessage('Game Started! Listen to the audio and arrange the items.');
+        }
+    },
 
     playNextAudio() {
         if (gameState.currentOrderIndex < gameConfig.getItemCountForLevel()) {
@@ -185,10 +209,12 @@ const gameManager = {
     
             const audioElement = document.getElementById('item-audio');
             audioElement.src = currentItem.audio;
-            audioElement.play();
+            audioElement.play().catch(error => {
+                console.error("Error playing audio:", error);
+                uiManager.showMessage("Error playing audio. Please check your sound settings.");
+            });
         }
     },
-    
 
     setupInteractions() {
         interact(".dropzone").dropzone({
@@ -216,21 +242,28 @@ const gameManager = {
 
     resetLevel() {
         gameState.currentOrderIndex = 0;
-        this.fetchItems();
+        itemRenderer.renderDraggableItems(gameState.items);
         uiManager.updateLevel();
-        this.playNextAudio(); // Play the first audio of the new level
+        this.playNextAudio();
     },
-    
 
     resetGame() {
         gameState.lives = 3;
         gameState.level = 1;
         gameState.currentOrderIndex = 0;
+        gameState.gameStarted = false;
+        document.getElementById('startButton').style.display = 'block';
+        document.getElementById('draggable-container').innerHTML = '';
         this.fetchItems();
         uiManager.updateLives();
-        uiManager.showMessage('Game Reset!');
+        uiManager.updateLevel();
+        uiManager.showMessage('Game Reset! Press Start to begin.');
     }
 };
+document.getElementById('theme-toggle').addEventListener('click', () => {
+    document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+  });
+  
 
 // Initialize the game when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => gameManager.init());
