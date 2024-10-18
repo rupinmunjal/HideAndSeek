@@ -20,8 +20,8 @@
         "image": "assets/images/marker.png"
     },
     {
-        "id": "higlighter",
-        "name": "Higlighter",
+        "id": "highlighter",
+        "name": "Highlighter",
         "image": "assets/images/highlighter.png"
     }
 ]
