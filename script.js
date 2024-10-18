@@ -1,46 +1,116 @@
-let currentOrderIndex = 0;
-let correctOrder = [];
-let lives = 3; // Initialize lives counter
-let level = 1; // Initialize level
-const minItems = 3; // Minimum number of items per level
-let maxItems = 0; // Maximum number of items in the JSON file
+// Game state variables
+const gameState = {
+    currentOrderIndex: 0,
+    correctOrder: [],
+    lives: 3,
+    level: 1,
+    minItems: 3,
+    maxItems: 0
+};
 
-// Fetch items from JSON file and set up the game
-async function fetchItems() {
-    const response = await fetch('assets/json/items.json');
-    const items = await response.json();
-    maxItems = items.length; // Get the total number of items available
-    correctOrder = items.map(item => item.id); // Extract IDs for correct order
-    shuffleArray(correctOrder); // Shuffle the order
-    renderDraggableItems(items); // Render draggable items
-    updateGameTitle(items); // Update title with the current order
-    randomizeSpawnLocation(); // Randomize spawn locations
-}
+// Game configuration and utilities
+const gameConfig = {
+    itemDimensions: {
+        width: 160,
+        height: 160
+    },
 
-// Function to render draggable items dynamically with equal spacing
-function renderDraggableItems(items) {
-    const boxContainer = document.getElementById('draggable-container');
-    boxContainer.innerHTML = ''; // Clear the boxContainer
+    // Fisher-Yates shuffle algorithm
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    },
 
-    const numItemsToRender = Math.min(minItems + level - 1, maxItems); 
-    const itemsToRender = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id));
+    // Calculate number of items for current level
+    getItemCountForLevel() {
+        return Math.min(gameState.minItems + gameState.level - 1, gameState.maxItems);
+    },
 
-    const containerWidth = boxContainer.clientWidth;
-    const containerHeight = boxContainer.clientHeight;
+    // Capitalize first letter of a word
+    capitalizeFirstLetter(word) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+};
 
-    const itemWidth = 160; // Assuming fixed width for each item
-    const itemHeight = 160; // Assuming fixed height for each item
+// UI update functions
+const uiManager = {
+    updateLives() {
+        document.getElementById("lives-counter").textContent = gameState.lives;
+    },
 
-    const rows = Math.ceil(Math.sqrt(numItemsToRender)); // Calculate rows for even distribution
-    const cols = Math.ceil(numItemsToRender / rows); // Calculate columns needed
+    updateLevel() {
+        document.getElementById("level-counter").textContent = gameState.level;
+    },
 
-    const horizontalSpacing = (containerWidth - (cols * itemWidth)) / (cols + 1);
-    const verticalSpacing = (containerHeight - (rows * itemHeight)) / (rows + 1);
+    updateGameTitle(items) {
+        const itemCount = gameConfig.getItemCountForLevel();
+        const orderText = gameState.correctOrder
+            .slice(0, itemCount)
+            .map(id => items.find(item => item.id === id).name)
+            .map(gameConfig.capitalizeFirstLetter)
+            .join(", ");
 
-    itemsToRender.forEach((item, index) => {
-        const row = Math.floor(index / cols);
-        const col = index % cols;
+        document.title = `Order: ${orderText}`;
+        document.getElementById("game-level").textContent = `Level ${gameState.level}`;
+        document.getElementById("game-title").textContent = `${orderText} (${itemCount} items)`;
+    },
 
+    showMessage(msg) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = msg;
+        setTimeout(() => messageDiv.textContent = '', 2000);
+    }
+};
+
+// Item rendering and positioning
+const itemRenderer = {
+    renderDraggableItems(items) {
+        const boxContainer = document.getElementById('draggable-container');
+        boxContainer.innerHTML = '';
+
+        const itemCount = gameConfig.getItemCountForLevel();
+        const itemsToRender = gameState.correctOrder
+            .slice(0, itemCount)
+            .map(id => items.find(item => item.id === id));
+
+        // Calculate layout dimensions
+        const layout = this.calculateLayout(boxContainer, itemCount);
+
+        // Create and position items
+        itemsToRender.forEach((item, index) => {
+            const position = this.calculateItemPosition(layout, index);
+            const draggableDiv = this.createDraggableItem(item, position);
+            boxContainer.appendChild(draggableDiv);
+        });
+    },
+
+    calculateLayout(container, itemCount) {
+        const { width: itemWidth, height: itemHeight } = gameConfig.itemDimensions;
+        const rows = Math.ceil(Math.sqrt(itemCount));
+        const cols = Math.ceil(itemCount / rows);
+
+        return {
+            rows,
+            cols,
+            horizontalSpacing: (container.clientWidth - (cols * itemWidth)) / (cols + 1),
+            verticalSpacing: (container.clientHeight - (rows * itemHeight)) / (rows + 1)
+        };
+    },
+
+    calculateItemPosition(layout, index) {
+        const { width: itemWidth, height: itemHeight } = gameConfig.itemDimensions;
+        const row = Math.floor(index / layout.cols);
+        const col = index % layout.cols;
+
+        return {
+            left: layout.horizontalSpacing + col * (itemWidth + layout.horizontalSpacing),
+            top: layout.verticalSpacing + row * (itemHeight + layout.verticalSpacing)
+        };
+    },
+
+    createDraggableItem(item, position) {
         const draggableDiv = document.createElement('div');
         draggableDiv.classList.add('draggable');
         draggableDiv.id = item.id;
@@ -51,179 +121,118 @@ function renderDraggableItems(items) {
         img.classList.add('draggable-image');
 
         draggableDiv.appendChild(img);
-        boxContainer.appendChild(draggableDiv);
-
-        // Set position with equal spacing
         draggableDiv.style.position = 'absolute';
-        draggableDiv.style.left = `${horizontalSpacing + col * (itemWidth + horizontalSpacing)}px`;
-        draggableDiv.style.top = `${verticalSpacing + row * (itemHeight + verticalSpacing)}px`;
-    });
-}
+        draggableDiv.style.left = `${position.left}px`;
+        draggableDiv.style.top = `${position.top}px`;
 
-
-// Fisher-Yates shuffle to randomize order
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        return draggableDiv;
     }
-}
+};
 
-// Update the title and game heading with the current order and level
-function updateGameTitle(items) {
-    const capitalizeFirstLetter = (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+// Drag and drop handlers
+const dragDropHandler = {
+    dragMoveListener(event) {
+        const target = event.target;
+        const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
+        const y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
 
-    const numItemsToRender = Math.min(minItems + level - 1, maxItems); // Calculate the number of items for the current level
-    const orderText = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id).name).map(capitalizeFirstLetter).join(", ");
-    document.title = `Order: ${orderText}`;
-    document.getElementById("game-title").textContent = `Level ${level} - Drag & Drop in Order: ${orderText} (${numItemsToRender} items)`;
-}
+        target.style.transform = `translate(${x}px, ${y}px)`;
+        target.setAttribute("data-x", x);
+        target.setAttribute("data-y", y);
+    },
 
-// Update the lives counter on the screen
-function updateLives() {
-    document.getElementById("lives-counter").textContent = lives; // Update lives display
-}
+    onDrop(event) {
+        const draggableElement = event.relatedTarget;
+        const itemId = draggableElement.id;
 
-// Update the level counter on the screen
-function updateLevel() {
-    document.getElementById("level-counter").textContent = level; // Update level display
-}
-
-// Randomize the spawn location of draggable items
-function randomizeSpawnLocation() {
-    const spawnAreaWidth = window.height;
-    const spawnAreaHeight = window.width;
-    const dropZone = document.getElementById('dropzone');
-
-    const dropZoneRect = dropZone.getBoundingClientRect();
-
-    document.querySelectorAll('.draggable').forEach((item) => {
-        let randomTop, randomLeft;
-
-        do {
-            randomTop = Math.floor(Math.random() * (spawnAreaHeight - item.offsetHeight));
-            randomLeft = Math.floor(Math.random() * (spawnAreaWidth - item.offsetWidth));
-        } while (
-            randomTop < dropZoneRect.bottom && randomTop + item.offsetHeight > dropZoneRect.top &&
-            randomLeft < dropZoneRect.right && randomLeft + item.offsetWidth > dropZoneRect.left
-        );
-
-        item.style.position = 'absolute'; // Ensure items are absolutely positioned
-        item.style.top = randomTop + 'px';
-        item.style.left = randomLeft + 'px';
-    });
-}
-
-// Drag and drop logic
-document.addEventListener("DOMContentLoaded", async () => {
-    await fetchItems(); // Fetch items and setup the game
-
-    interact(".dropzone").dropzone({
-        accept: ".draggable",
-        overlap: 0.5,
-        ondragenter: onDragEnter,
-        ondragleave: onDragLeave,
-        ondrop: onDrop
-    });
-
-    interact(".draggable").draggable({
-        inertia: true,
-        autoScroll: true,
-        modifiers: [
-            interact.modifiers.restrictRect({
-                restriction: "parent",
-                endOnly: true
-            })
-        ],
-        listeners: { move: dragMoveListener }
-    });
-
-    // Update lives and level initially
-    updateLives();
-    updateLevel();
-});
-
-// Drag move listener to allow smooth dragging
-function dragMoveListener(event) {
-    let target = event.target;
-    let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
-    let y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
-
-    target.style.transform = `translate(${x}px, ${y}px)`;
-    target.setAttribute("data-x", x);
-    target.setAttribute("data-y", y);
-}
-
-function onDragEnter(event) {
-    let dropzoneElement = event.target;
-    dropzoneElement.classList.add('drop-target');
-}
-
-function onDragLeave(event) {
-    let dropzoneElement = event.target;
-    dropzoneElement.classList.remove('drop-target');
-}
-
-function onDrop(event) {
-    let draggableElement = event.relatedTarget;
-    let itemId = draggableElement.getAttribute('id');
-
-    // Get the dropzone's position
-    const dropzoneRect = document.getElementById('dropzone').getBoundingClientRect();
-
-    if (itemId === correctOrder[currentOrderIndex]) {
-        currentOrderIndex++;
-        draggableElement.style.visibility = 'hidden'; // Hide the correct item
-
-        // Check if the current level is complete
-        if (currentOrderIndex >= Math.min(minItems + level - 1, maxItems)) {
-            level++; // Go to the next level
-            currentOrderIndex = 0; // Reset order index for the new level
-            resetItems(); // Reset items for the next level
+        if (itemId === gameState.correctOrder[gameState.currentOrderIndex]) {
+            this.handleCorrectDrop(draggableElement);
+        } else {
+            this.handleIncorrectDrop(draggableElement);
         }
-    } else {
-        lives--; // Deduct a life on incorrect drop
-        showMessage(`Incorrect! You have ${lives} lives left.`); // Show incorrect message
 
-        // Return the incorrect item back to the draggable container
-        returnItemToContainer(draggableElement);
+        uiManager.updateLives();
+    },
 
-        // Check if lives are 0
-        if (lives <= 0) {
+    handleCorrectDrop(element) {
+        element.style.visibility = 'hidden';
+        gameState.currentOrderIndex++;
+
+        if (gameState.currentOrderIndex >= gameConfig.getItemCountForLevel()) {
+            gameState.level++;
+            gameState.currentOrderIndex = 0;
+            gameManager.resetItems();
+        }
+    },
+
+    handleIncorrectDrop(element) {
+        gameState.lives--;
+        uiManager.showMessage(`Incorrect! You have ${gameState.lives} lives left.`);
+        this.returnItemToContainer(element);
+
+        if (gameState.lives <= 0) {
             alert("Game Over! No lives left. Restarting the game.");
-            resetItems();
-            return;
+            gameManager.resetItems();
         }
+    },
+
+    returnItemToContainer(item) {
+        item.style.transform = 'translate(0px, 0px)';
+        item.setAttribute('data-x', 0);
+        item.setAttribute('data-y', 0);
+        document.getElementById('draggable-container').appendChild(item);
     }
+};
 
-    updateLives();
-}
+// Game manager
+const gameManager = {
+    async init() {
+        await this.fetchItems();
+        this.setupInteractions();
+        uiManager.updateLives();
+        uiManager.updateLevel();
+    },
 
+    async fetchItems() {
+        const response = await fetch('assets/json/items.json');
+        const items = await response.json();
+        gameState.maxItems = items.length;
+        gameState.correctOrder = items.map(item => item.id);
+        gameConfig.shuffleArray(gameState.correctOrder);
+        itemRenderer.renderDraggableItems(items);
+        uiManager.updateGameTitle(items);
+    },
 
-// Function to return incorrect item to the draggable container
-function returnItemToContainer(item) {
-    const boxContainer = document.getElementById('draggable-container');
-    item.style.transform = 'translate(0px, 0px)'; // Reset position
-    item.setAttribute('data-x', 0);
-    item.setAttribute('data-y', 0);
-    boxContainer.appendChild(item); // Re-append to the container
-}
+    setupInteractions() {
+        interact(".dropzone").dropzone({
+            accept: ".draggable",
+            overlap: 0.5,
+            ondragenter: (event) => event.target.classList.add('drop-target'),
+            ondragleave: (event) => event.target.classList.remove('drop-target'),
+            ondrop: (event) => dragDropHandler.onDrop(event)
+        });
 
+        interact(".draggable").draggable({
+            inertia: true,
+            autoScroll: true,
+            modifiers: [
+                interact.modifiers.restrictRect({
+                    restriction: "parent",
+                    endOnly: true
+                })
+            ],
+            listeners: { move: dragDropHandler.dragMoveListener }
+        });
+    },
 
-// Show feedback message
-function showMessage(msg) {
-    const messageDiv = document.getElementById('message');
-    messageDiv.textContent = msg;
-    setTimeout(() => {
-        messageDiv.textContent = ''; // Clear the message after a delay
-    }, 2000);
-}
+    resetItems() {
+        gameState.lives = 3;
+        gameState.currentOrderIndex = 0;
+        this.fetchItems();
+        uiManager.updateLives();
+        uiManager.updateLevel();
+    }
+};
 
-// Reset items and game state
-function resetItems() {
-    lives = 3; // Reset lives
-    currentOrderIndex = 0; // Reset order index
-    fetchItems(); // Fetch items again for new game
-    updateLives(); // Update lives display
-    updateLevel(); // Update level display
-}
+// Initialize the game when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => gameManager.init());

@@ -1,13 +1,8 @@
 /* General body styling */
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Times New Roman', Times, serif,"Roboto", sans-serif;
     display: flex;
-    /* align-items: center;
-    justify-content: center; */
-    animation: gradientAnimation 15s ease infinite;
-    transition: background-color 0.3s ease;
-    background: pink;
-    animation: backgroundAnimation 10s infinite alternate;
+    background-color: rgb(150, 31, 194);
 }
 
 /* Container styling */
