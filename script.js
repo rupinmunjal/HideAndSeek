@@ -14,6 +14,7 @@ const gameConfig = {
         width: 160,
         height: 160
     },
+    itemSpacing: 20, // Space between items
 
     // Fisher-Yates shuffle algorithm
     shuffleArray(array) {
@@ -54,7 +55,7 @@ const uiManager = {
 
         document.title = `Order: ${orderText}`;
         document.getElementById("game-level").textContent = `Level ${gameState.level}`;
-        document.getElementById("game-title").textContent = `${orderText} (${itemCount} items)`;
+        document.getElementById("game-title").textContent = `${orderText}`;
     },
 
     showMessage(msg) {
@@ -75,38 +76,27 @@ const itemRenderer = {
             .slice(0, itemCount)
             .map(id => items.find(item => item.id === id));
 
-        // Calculate layout dimensions
-        const layout = this.calculateLayout(boxContainer, itemCount);
+        // Calculate total width needed
+        const totalWidth = (itemCount * gameConfig.itemDimensions.width) +
+            ((itemCount - 1) * gameConfig.itemSpacing);
+
+        // Center the container
+        boxContainer.style.width = `${totalWidth}px`;
+        boxContainer.style.margin = '0 auto';
 
         // Create and position items
         itemsToRender.forEach((item, index) => {
-            const position = this.calculateItemPosition(layout, index);
+            const position = this.calculateItemPosition(index);
             const draggableDiv = this.createDraggableItem(item, position);
             boxContainer.appendChild(draggableDiv);
         });
     },
 
-    calculateLayout(container, itemCount) {
-        const { width: itemWidth, height: itemHeight } = gameConfig.itemDimensions;
-        const rows = Math.ceil(Math.sqrt(itemCount));
-        const cols = Math.ceil(itemCount / rows);
-
+    calculateItemPosition(index) {
+        const { width: itemWidth } = gameConfig.itemDimensions;
         return {
-            rows,
-            cols,
-            horizontalSpacing: (container.clientWidth - (cols * itemWidth)) / (cols + 1),
-            verticalSpacing: (container.clientHeight - (rows * itemHeight)) / (rows + 1)
-        };
-    },
-
-    calculateItemPosition(layout, index) {
-        const { width: itemWidth, height: itemHeight } = gameConfig.itemDimensions;
-        const row = Math.floor(index / layout.cols);
-        const col = index % layout.cols;
-
-        return {
-            left: layout.horizontalSpacing + col * (itemWidth + layout.horizontalSpacing),
-            top: layout.verticalSpacing + row * (itemHeight + layout.verticalSpacing)
+            left: index * (itemWidth + gameConfig.itemSpacing),
+            top: 0
         };
     },
 
@@ -161,7 +151,7 @@ const dragDropHandler = {
         if (gameState.currentOrderIndex >= gameConfig.getItemCountForLevel()) {
             gameState.level++;
             gameState.currentOrderIndex = 0;
-            gameManager.resetItems();
+            gameManager.resetLevel();
         }
     },
 
@@ -172,7 +162,7 @@ const dragDropHandler = {
 
         if (gameState.lives <= 0) {
             alert("Game Over! No lives left. Restarting the game.");
-            gameManager.resetItems();
+            gameManager.resetGame();
         }
     },
 
@@ -189,6 +179,7 @@ const gameManager = {
     async init() {
         await this.fetchItems();
         this.setupInteractions();
+        this.setupResetButton();
         uiManager.updateLives();
         uiManager.updateLevel();
     },
@@ -225,12 +216,25 @@ const gameManager = {
         });
     },
 
-    resetItems() {
+    setupResetButton() {
+        const resetButton = document.getElementById('reset-button');
+        resetButton.addEventListener('click', () => this.resetGame());
+    },
+
+    resetLevel() {
+        gameState.currentOrderIndex = 0;
+        this.fetchItems();
+        uiManager.updateLevel();
+    },
+
+    resetGame() {
         gameState.lives = 3;
+        gameState.level = 1;
         gameState.currentOrderIndex = 0;
         this.fetchItems();
         uiManager.updateLives();
         uiManager.updateLevel();
+        uiManager.showMessage('Game Reset!');
     }
 };
 
