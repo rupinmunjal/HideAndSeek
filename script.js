@@ -17,15 +17,30 @@ async function fetchItems() {
     randomizeSpawnLocation(); // Randomize spawn locations
 }
 
-// Function to render draggable items dynamically
+// Function to render draggable items dynamically with equal spacing
 function renderDraggableItems(items) {
-    const container = document.getElementById('draggable-container');
-    container.innerHTML = ''; // Clear the container
+    const boxContainer = document.getElementById('draggable-container');
+    boxContainer.innerHTML = ''; // Clear the boxContainer
 
-    const numItemsToRender = Math.min(minItems + level - 1, maxItems); // Determine number of items to render
-    const itemsToRender = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id)); // Get the items for the current level based on correct order
+    const numItemsToRender = Math.min(minItems + level - 1, maxItems); 
+    const itemsToRender = correctOrder.slice(0, numItemsToRender).map(id => items.find(item => item.id === id));
 
-    itemsToRender.forEach(item => {
+    const containerWidth = boxContainer.clientWidth;
+    const containerHeight = boxContainer.clientHeight;
+
+    const itemWidth = 160; // Assuming fixed width for each item
+    const itemHeight = 160; // Assuming fixed height for each item
+
+    const rows = Math.ceil(Math.sqrt(numItemsToRender)); // Calculate rows for even distribution
+    const cols = Math.ceil(numItemsToRender / rows); // Calculate columns needed
+
+    const horizontalSpacing = (containerWidth - (cols * itemWidth)) / (cols + 1);
+    const verticalSpacing = (containerHeight - (rows * itemHeight)) / (rows + 1);
+
+    itemsToRender.forEach((item, index) => {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+
         const draggableDiv = document.createElement('div');
         draggableDiv.classList.add('draggable');
         draggableDiv.id = item.id;
@@ -36,9 +51,15 @@ function renderDraggableItems(items) {
         img.classList.add('draggable-image');
 
         draggableDiv.appendChild(img);
-        container.appendChild(draggableDiv);
+        boxContainer.appendChild(draggableDiv);
+
+        // Set position with equal spacing
+        draggableDiv.style.position = 'absolute';
+        draggableDiv.style.left = `${horizontalSpacing + col * (itemWidth + horizontalSpacing)}px`;
+        draggableDiv.style.top = `${verticalSpacing + row * (itemHeight + verticalSpacing)}px`;
     });
 }
+
 
 // Fisher-Yates shuffle to randomize order
 function shuffleArray(array) {
@@ -70,8 +91,8 @@ function updateLevel() {
 
 // Randomize the spawn location of draggable items
 function randomizeSpawnLocation() {
-    const spawnAreaWidth = window.innerWidth;
-    const spawnAreaHeight = window.innerHeight;
+    const spawnAreaWidth = window.height;
+    const spawnAreaHeight = window.width;
     const dropZone = document.getElementById('dropzone');
 
     const dropZoneRect = dropZone.getBoundingClientRect();
@@ -99,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     interact(".dropzone").dropzone({
         accept: ".draggable",
-        overlap: 0.75,
+        overlap: 0.5,
         ondragenter: onDragEnter,
         ondragleave: onDragLeave,
         ondrop: onDrop
@@ -122,7 +143,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateLevel();
 });
 
-// Move dragged elements
+// Drag move listener to allow smooth dragging
 function dragMoveListener(event) {
     let target = event.target;
     let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
@@ -143,7 +164,6 @@ function onDragLeave(event) {
     dropzoneElement.classList.remove('drop-target');
 }
 
-// Handle the drop logic
 function onDrop(event) {
     let draggableElement = event.relatedTarget;
     let itemId = draggableElement.getAttribute('id');
@@ -164,9 +184,9 @@ function onDrop(event) {
     } else {
         lives--; // Deduct a life on incorrect drop
         showMessage(`Incorrect! You have ${lives} lives left.`); // Show incorrect message
-        
-        // Push the item away from the dropzone
-        pushAway(draggableElement, dropzoneRect);
+
+        // Return the incorrect item back to the draggable container
+        returnItemToContainer(draggableElement);
 
         // Check if lives are 0
         if (lives <= 0) {
@@ -179,37 +199,16 @@ function onDrop(event) {
     updateLives();
 }
 
-// Function to push the item away from the drop zone
-function pushAway(draggableElement, dropzoneRect) {
-    const itemRect = draggableElement.getBoundingClientRect();
 
-    // Calculate the center position of the dropzone
-    const dropzoneCenterX = dropzoneRect.left + dropzoneRect.width / 2;
-    const dropzoneCenterY = dropzoneRect.top + dropzoneRect.height / 2;
-
-    // Calculate the center position of the draggable item
-    const itemCenterX = itemRect.left + itemRect.width / 2;
-    const itemCenterY = itemRect.top + itemRect.height / 2;
-
-    // Calculate the direction from the dropzone center to the item center
-    const deltaX = itemCenterX - dropzoneCenterX;
-    const deltaY = itemCenterY - dropzoneCenterY;
-
-    // Normalize the direction vector
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const normX = deltaX / distance;
-    const normY = deltaY / distance;
-
-    // Push the item away by a specific distance (e.g., 100 pixels)
-    const pushDistance = 100;
-    const newLeft = itemRect.left + (normX * pushDistance);
-    const newTop = itemRect.top + (normY * pushDistance);
-
-    // Move the draggable item to the new position
-    draggableElement.style.transform = `translate(${newLeft}px, ${newTop}px)`;
-    draggableElement.setAttribute("data-x", newLeft);
-    draggableElement.setAttribute("data-y", newTop);
+// Function to return incorrect item to the draggable container
+function returnItemToContainer(item) {
+    const boxContainer = document.getElementById('draggable-container');
+    item.style.transform = 'translate(0px, 0px)'; // Reset position
+    item.setAttribute('data-x', 0);
+    item.setAttribute('data-y', 0);
+    boxContainer.appendChild(item); // Re-append to the container
 }
+
 
 // Show feedback message
 function showMessage(msg) {
