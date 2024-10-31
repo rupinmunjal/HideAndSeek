@@ -3,30 +3,30 @@
         "id": "pen",
         "name": "Pen",
         "image": "assets/images/pen.png",
-        "audio": "assets/audio/pen.mp3"
+        "audio": null
     },
     {
         "id": "pencil",
         "name": "Pencil",
         "image": "assets/images/pencil.png",
-        "audio": "assets/audio/pencil.mp3"
+        "audio": null
     },
     {
         "id": "eraser",
         "name": "Eraser",
         "image": "assets/images/eraser.png",
-        "audio": "assets/audio/eraser.mp3"
+        "audio": null
     },
     {
         "id": "marker",
         "name": "Marker",
         "image": "assets/images/marker.png",
-        "audio": "assets/audio/marker.mp3"
+        "audio": null
     },
     {
         "id": "highlighter",
         "name": "Highlighter",
         "image": "assets/images/highlighter.png",
-        "audio": "assets/audio/highlighter.mp3"
+        "audio": null
     }
 ]

@@ -1,4 +1,7 @@
-// Game state variables
+/**
+ * Game State Management
+ * Centralized state object containing all game-related variables
+ */
 const gameState = {
     currentOrderIndex: 0,
     correctOrder: [],
@@ -7,15 +10,24 @@ const gameState = {
     minItems: 3,
     maxItems: 0,
     items: [],
-    gameStarted: false
+    gameStarted: false,
+    currentWord: '',
+    shuffledItems: [],
+    wordOrder: []
 };
 
-// Game configuration and utilities
+/**
+ * Game Configuration
+ * Contains game settings and utility functions
+ */
 const gameConfig = {
     itemDimensions: { width: 160, height: 160 },
-    itemSpacing: 20, // Space between items
+    itemSpacing: 20,
 
-    // Fisher-Yates shuffle algorithm
+    /**
+     * Shuffles array elements using Fisher-Yates algorithm
+     * @param {Array} array - Array to be shuffled
+     */
     shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -23,22 +35,39 @@ const gameConfig = {
         }
     },
 
-    // Calculate number of items for the current level
+    /**
+     * Calculates number of items for current level
+     * @returns {number} Number of items for current level
+     */
     getItemCountForLevel() {
         return Math.min(gameState.minItems + gameState.level - 1, gameState.maxItems);
     }
 };
 
-// UI update functions
+/**
+ * UI Management
+ * Handles all user interface updates and messages
+ */
 const uiManager = {
+    /**
+     * Updates the lives display
+     */
     updateLives() {
         document.getElementById("lives-counter").textContent = gameState.lives;
     },
 
+    /**
+     * Updates the level display
+     */
     updateLevel() {
         document.getElementById("level-counter").textContent = gameState.level;
+        document.getElementById("game-level").textContent = `Level ${gameState.level}`;
     },
 
+    /**
+     * Shows a temporary message to the user
+     * @param {string} msg - Message to display
+     */
     showMessage(msg) {
         const messageDiv = document.getElementById('message');
         messageDiv.textContent = msg;
@@ -46,19 +75,30 @@ const uiManager = {
     }
 };
 
-// Item rendering and positioning
+/**
+ * Item Rendering System
+ * Handles the visual representation and positioning of game items
+ */
 const itemRenderer = {
+    /**
+     * Renders draggable items in the container
+     * @param {Array} items - Array of items to render
+     */
     renderDraggableItems(items) {
         const boxContainer = document.getElementById('draggable-container');
         boxContainer.innerHTML = '';
 
         const itemCount = gameConfig.getItemCountForLevel();
-        const itemsToRender = gameState.correctOrder
-            .slice(0, itemCount)
-            .map(id => items.find(item => item.id === id));
-
+        
+        const itemsToRender = [...items].slice(0, itemCount);
+        const wordOrderItems = [...itemsToRender];
+        
         gameConfig.shuffleArray(itemsToRender);
-
+        gameConfig.shuffleArray(wordOrderItems);
+        
+        gameState.shuffledItems = itemsToRender;
+        gameState.wordOrder = wordOrderItems;
+        
         const totalWidth = (itemCount * gameConfig.itemDimensions.width) +
             ((itemCount - 1) * gameConfig.itemSpacing);
 
@@ -70,13 +110,26 @@ const itemRenderer = {
             const draggableDiv = this.createDraggableItem(item, position);
             boxContainer.appendChild(draggableDiv);
         });
+
+        gameManager.showNextWord();
     },
 
+    /**
+     * Calculates position for an item
+     * @param {number} index - Item index
+     * @returns {Object} Position coordinates
+     */
     calculateItemPosition(index) {
         const { width } = gameConfig.itemDimensions;
         return { left: index * (width + gameConfig.itemSpacing), top: 0 };
     },
 
+    /**
+     * Creates a draggable item element
+     * @param {Object} item - Item data
+     * @param {Object} position - Position coordinates
+     * @returns {HTMLElement} Draggable element
+     */
     createDraggableItem(item, position) {
         const draggableDiv = document.createElement('div');
         draggableDiv.classList.add('draggable');
@@ -87,10 +140,9 @@ const itemRenderer = {
         img.alt = item.name;
         img.classList.add('draggable-image');
 
-        // Add error handling for image loading
         img.onerror = function() {
             console.error(`Failed to load image: ${item.image}`);
-            this.src = 'path/to/placeholder-image.png'; // Replace with an actual placeholder image path
+            this.src = 'path/to/placeholder-image.png';
         };
 
         draggableDiv.appendChild(img);
@@ -102,8 +154,15 @@ const itemRenderer = {
     }
 };
 
-// Drag and drop handlers
+/**
+ * Drag and Drop System
+ * Manages all drag and drop interactions and their consequences
+ */
 const dragDropHandler = {
+    /**
+     * Handles drag movement
+     * @param {Event} event - Drag event
+     */
     dragMoveListener(event) {
         const target = event.target;
         const x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
@@ -114,11 +173,15 @@ const dragDropHandler = {
         target.setAttribute("data-y", y);
     },
 
+    /**
+     * Handles drop events
+     * @param {Event} event - Drop event
+     */
     onDrop(event) {
         const draggableElement = event.relatedTarget;
         const itemId = draggableElement.id;
 
-        if (itemId === gameState.correctOrder[gameState.currentOrderIndex]) {
+        if (itemId === gameState.wordOrder[gameState.currentOrderIndex].id) {
             this.handleCorrectDrop(draggableElement);
         } else {
             this.handleIncorrectDrop(draggableElement);
@@ -127,6 +190,10 @@ const dragDropHandler = {
         uiManager.updateLives();
     },
 
+    /**
+     * Handles correct item drops
+     *  @param {HTMLElement} element - Dropped element
+     */
     handleCorrectDrop(element) {
         element.style.visibility = 'hidden';
         gameState.currentOrderIndex++;
@@ -136,10 +203,14 @@ const dragDropHandler = {
             gameState.currentOrderIndex = 0;
             gameManager.resetLevel();
         } else {
-            gameManager.playNextAudio();
+            gameManager.showNextWord();
         }
     },
 
+    /**
+     * Handles incorrect item drops
+     * @param {HTMLElement} element - Dropped element
+     */
     handleIncorrectDrop(element) {
         gameState.lives--;
         uiManager.showMessage(`Incorrect! You have ${gameState.lives} lives left.`);
@@ -151,6 +222,10 @@ const dragDropHandler = {
         }
     },
 
+    /**
+     * Returns item to original container
+     * @param {HTMLElement} item - Item to return
+     */
     returnItemToContainer(item) {
         item.style.transform = 'translate(0px, 0px)';
         item.setAttribute('data-x', 0);
@@ -159,8 +234,14 @@ const dragDropHandler = {
     }
 };
 
-// Game manager
+/**
+ * Game Manager
+ * Core game logic and initialization
+ */
 const gameManager = {
+    /**
+     * Initializes the game
+     */
     async init() {
         await this.fetchItems();
         this.setupInteractions();
@@ -170,6 +251,9 @@ const gameManager = {
         uiManager.updateLevel();
     },
 
+    /**
+     * Fetches game items from server
+     */
     async fetchItems() {
         try {
             const response = await fetch('assets/json/items.json');
@@ -187,35 +271,41 @@ const gameManager = {
         }
     },
 
+    /**
+     * Sets up the start button
+     */
     setupStartButton() {
         const startButton = document.getElementById('startButton');
         startButton.addEventListener('click', () => this.startGame());
     },
 
+    /**
+     * Starts the game
+     */
     startGame() {
         if (!gameState.gameStarted) {
             gameState.gameStarted = true;
+            gameConfig.shuffleArray(gameState.items);
             itemRenderer.renderDraggableItems(gameState.items);
-            this.playNextAudio();
             document.getElementById('startButton').style.display = 'none';
-            uiManager.showMessage('Game Started! Listen to the audio and arrange the items.');
+            uiManager.showMessage('Game Started! Arrange the items in the correct order.');
         }
     },
 
-    playNextAudio() {
+    /**
+     * Shows the next word to match
+     */
+    showNextWord() {
         if (gameState.currentOrderIndex < gameConfig.getItemCountForLevel()) {
-            const currentItemId = gameState.correctOrder[gameState.currentOrderIndex];
-            const currentItem = gameState.items.find(item => item.id === currentItemId);
-    
-            const audioElement = document.getElementById('item-audio');
-            audioElement.src = currentItem.audio;
-            audioElement.play().catch(error => {
-                console.error("Error playing audio:", error);
-                uiManager.showMessage("Error playing audio. Please check your sound settings.");
-            });
+            const currentWord = gameState.wordOrder[gameState.currentOrderIndex];
+            gameState.currentWord = currentWord.name;
+            document.getElementById('game-title').textContent = `Arrange: ${currentWord.name}`;
         }
     },
 
+    /**
+     * Sets up drag and drop interactions
+     */
     setupInteractions() {
         interact(".dropzone").dropzone({
             accept: ".draggable",
@@ -235,18 +325,27 @@ const gameManager = {
         });
     },
 
+    /**
+     * Sets up the reset button
+     */
     setupResetButton() {
         const resetButton = document.getElementById('reset-button');
         resetButton.addEventListener('click', () => this.resetGame());
     },
 
+    /**
+     * Resets the current level
+     */
     resetLevel() {
         gameState.currentOrderIndex = 0;
+        gameConfig.shuffleArray(gameState.items);
         itemRenderer.renderDraggableItems(gameState.items);
         uiManager.updateLevel();
-        this.playNextAudio();
     },
 
+    /**
+     * Resets the entire game
+     */
     resetGame() {
         gameState.lives = 3;
         gameState.level = 1;
@@ -254,16 +353,31 @@ const gameManager = {
         gameState.gameStarted = false;
         document.getElementById('startButton').style.display = 'block';
         document.getElementById('draggable-container').innerHTML = '';
+        document.getElementById('game-title').textContent = 'Arrange the Items';
         this.fetchItems();
         uiManager.updateLives();
         uiManager.updateLevel();
         uiManager.showMessage('Game Reset! Press Start to begin.');
     }
 };
-document.getElementById('theme-toggle').addEventListener('click', () => {
-    document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-  });
-  
 
-// Initialize the game when DOM is loaded
-document.addEventListener("DOMContentLoaded", () => gameManager.init());
+/**
+ * Theme Manager
+ * Handles theme switching functionality
+ */
+const themeManager = {
+    init() {
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.body.dataset.theme = 
+                document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        });
+    }
+};
+
+/**
+ * Application Initialization
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    gameManager.init();
+    themeManager.init();
+});
