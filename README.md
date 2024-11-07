@@ -24,7 +24,6 @@ https://github.com/rupinmunjal/MantraMatch
 
 
 # Installation
-[(Back to top)](#table-of-contents)
 
 #### Steps
 
@@ -36,6 +35,5 @@ https://github.com/rupinmunjal/MantraMatch
 
 
 # License
-[(Back to top)](#table-of-contents)
 
 [MIT license](./LICENSE)
