@@ -13,10 +13,10 @@ Mantra Match is an interactive drag-and-drop game designed to make learning fun 
 
 ![Demo Preview](https://raw.githubusercontent.com/rupinmunjal/MantraMatch/refs/heads/main/assets/images/logo.jpeg)
 
-https://github.com/rupinmunjal/MantraMatch
+https://rupinmunjal.github.io/MantraMatch/
 
 # Table of Contents
-- [Mantra Match](#https://github.com/rupinmunjal/MantraMatch)
+- [Mantra Match](#https://rupinmunjal.github.io/MantraMatch/)
 - [Quick Start Demo](#quick-start-demo)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
