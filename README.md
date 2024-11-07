@@ -20,7 +20,6 @@ https://github.com/rupinmunjal/MantraMatch
 - [Quick Start Demo](#quick-start-demo)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
-- [Development](#development)
 - [License](#license)
 
 
