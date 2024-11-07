@@ -78,6 +78,8 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://rupinmunjal.github.io/MantraMatch/)
 
+<img src="/assets/images/logo.jpeg" alt="Product Screenshot" width="300" height="300">
+
 Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `rupinmunjal`, `MantraMatch`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -87,7 +89,7 @@ Here's a blank template to get started: To avoid retyping too much info. Do a se
 ### Built With
 
 * [![Bootstrap][Bootstrap.com]][Bootstrap-url]
-* [![JQuery][JQuery.com]][JQuery-url]
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
