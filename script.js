@@ -7,13 +7,17 @@ const gameState = {
     correctOrder: [],
     lives: 3,
     level: 1,
+    score: 0,
     minItems: 3,
     maxItems: 0,
     items: [],
     gameStarted: false,
     currentWord: '',
     shuffledItems: [],
-    wordOrder: []
+    wordOrder: [],
+    difficulty: 'easy',
+    timer: null,
+    startTime: null
 };
 
 /**
@@ -23,6 +27,11 @@ const gameState = {
 const gameConfig = {
     itemDimensions: { width: 160, height: 160 },
     itemSpacing: 20,
+    difficultySettings: {
+        easy: { timeLimit: 60, scoreMultiplier: 1 },
+        medium: { timeLimit: 45, scoreMultiplier: 2 },
+        hard: { timeLimit: 30, scoreMultiplier: 3 }
+    },
 
     /**
      * Shuffles array elements using Fisher-Yates algorithm
@@ -41,6 +50,22 @@ const gameConfig = {
      */
     getItemCountForLevel() {
         return Math.min(gameState.minItems + gameState.level - 1, gameState.maxItems);
+    },
+
+    /**
+     * Gets time limit based on difficulty
+     * @returns {number} Time limit in seconds
+     */
+    getTimeLimit() {
+        return this.difficultySettings[gameState.difficulty].timeLimit;
+    },
+
+    /**
+     * Gets score multiplier based on difficulty
+     * @returns {number} Score multiplier
+     */
+    getScoreMultiplier() {
+        return this.difficultySettings[gameState.difficulty].scoreMultiplier;
     }
 };
 
@@ -65,6 +90,13 @@ const uiManager = {
     },
 
     /**
+     * Updates the score display
+     */
+    updateScore() {
+        document.getElementById("score-counter").textContent = gameState.score;
+    },
+
+    /**
      * Shows a temporary message to the user
      * @param {string} msg - Message to display
      */
@@ -72,6 +104,16 @@ const uiManager = {
         const messageDiv = document.getElementById('message');
         messageDiv.textContent = msg;
         setTimeout(() => messageDiv.textContent = '', 2000);
+    },
+
+    /**
+     * Updates the timer display
+     * @param {number} timeLeft - Time left in seconds
+     */
+    updateTimer(timeLeft) {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer').textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 };
 
@@ -134,6 +176,9 @@ const itemRenderer = {
         const draggableDiv = document.createElement('div');
         draggableDiv.classList.add('draggable');
         draggableDiv.id = item.id;
+        draggableDiv.setAttribute('aria-label', item.name);
+        draggableDiv.setAttribute('role', 'button');
+        draggableDiv.setAttribute('tabindex', '0');
 
         const img = document.createElement('img');
         img.src = item.image;
@@ -188,6 +233,7 @@ const dragDropHandler = {
         }
 
         uiManager.updateLives();
+        uiManager.updateScore();
     },
 
     /**
@@ -197,6 +243,7 @@ const dragDropHandler = {
     handleCorrectDrop(element) {
         element.style.visibility = 'hidden';
         gameState.currentOrderIndex++;
+        gameState.score += 10 * gameConfig.getScoreMultiplier();
     
         if (gameState.currentOrderIndex >= gameConfig.getItemCountForLevel()) {
             gameState.level++;
@@ -217,8 +264,7 @@ const dragDropHandler = {
         this.returnItemToContainer(element);
 
         if (gameState.lives <= 0) {
-            alert("Game Over! Restarting.");
-            gameManager.resetGame();
+            gameManager.endGame("Game Over! You ran out of lives.");
         }
     },
 
@@ -247,8 +293,11 @@ const gameManager = {
         this.setupInteractions();
         this.setupResetButton();
         this.setupStartButton();
+        this.setupBackButton();
         uiManager.updateLives();
         uiManager.updateLevel();
+        uiManager.updateScore();
+        this.setDifficulty();
     },
 
     /**
@@ -280,6 +329,16 @@ const gameManager = {
     },
 
     /**
+     * Sets up the back button
+     */
+    setupBackButton() {
+        const backButton = document.getElementById('back-to-home');
+        backButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    },
+
+    /**
      * Starts the game
      */
     startGame() {
@@ -289,6 +348,7 @@ const gameManager = {
             itemRenderer.renderDraggableItems(gameState.items);
             document.getElementById('startButton').style.display = 'none';
             uiManager.showMessage('Game Started! Arrange the items in the correct order.');
+            this.startTimer();
         }
     },
 
@@ -341,6 +401,7 @@ const gameManager = {
         gameConfig.shuffleArray(gameState.items);
         itemRenderer.renderDraggableItems(gameState.items);
         uiManager.updateLevel();
+        this.resetTimer();
     },
 
     /**
@@ -349,6 +410,7 @@ const gameManager = {
     resetGame() {
         gameState.lives = 3;
         gameState.level = 1;
+        gameState.score = 0;
         gameState.currentOrderIndex = 0;
         gameState.gameStarted = false;
         document.getElementById('startButton').style.display = 'block';
@@ -357,7 +419,59 @@ const gameManager = {
         this.fetchItems();
         uiManager.updateLives();
         uiManager.updateLevel();
+        uiManager.updateScore();
         uiManager.showMessage('Game Reset! Press Start to begin.');
+        this.resetTimer();
+    },
+
+    /**
+     * Sets the game difficulty based on URL parameter
+     */
+    setDifficulty() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty');
+        if (difficulty && ['easy', 'medium', 'hard'].includes(difficulty)) {
+            gameState.difficulty = difficulty;
+        }
+    },
+
+    /**
+     * Starts the game timer
+     */
+    startTimer() {
+        gameState.startTime = Date.now();
+        const timeLimit = gameConfig.getTimeLimit();
+        
+        gameState.timer = setInterval(() => {
+            const elapsedTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const timeLeft = Math.max(0, timeLimit - elapsedTime);
+            
+            uiManager.updateTimer(timeLeft);
+            
+            if (timeLeft === 0) {
+                this.endGame("Time's up!");
+            }
+        }, 1000);
+    },
+
+    /**
+     * Resets the game timer
+     */
+    resetTimer() {
+        if (gameState.timer) {
+            clearInterval(gameState.timer);
+        }
+        uiManager.updateTimer(gameConfig.getTimeLimit());
+    },
+
+    /**
+     * Ends the game
+     * @param {string} message - End game message
+     */
+    endGame(message) {
+        clearInterval(gameState.timer);
+        alert(`${message} Your final score is ${gameState.score}.`);
+        this.resetGame();
     }
 };
 
@@ -367,10 +481,28 @@ const gameManager = {
  */
 const themeManager = {
     init() {
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            document.body.dataset.theme = 
-                document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-        });
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                document.body.dataset.theme = 
+                    document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', document.body.dataset.theme);
+            });
+        }
+
+        // Set initial theme based on localStorage or system preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.dataset.theme = savedTheme;
+            if (themeToggle) {
+                themeToggle.checked = savedTheme === 'dark';
+            }
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.dataset.theme = 'dark';
+            if (themeToggle) {
+                themeToggle.checked = true;
+            }
+        }
     }
 };
 
