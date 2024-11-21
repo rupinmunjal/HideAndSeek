@@ -428,6 +428,7 @@ const gameManager = {
     itemRenderer.renderDraggableItems(gameState.items);
     uiManager.updateLevel();
     this.resetTimer();
+    this.startTimer(); 
   },
 
   /**
